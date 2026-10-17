@@ -2,8 +2,8 @@ import SwiftUI
 import UIKit
 import WebKit
 
-struct WebAppView: View {
-    @StateObject private var model = WebViewModel()
+struct NetworkView: View {
+    @ObservedObject var model: WebViewModel
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -12,17 +12,17 @@ struct WebAppView: View {
             if model.isLoading && model.hasLoadedOnce {
                 ProgressView(value: model.progress)
                     .progressViewStyle(.linear)
-                    .tint(Theme.accent)
+                    .tint(Theme.secondary)
                     .frame(height: 3)
                     .background(Color.white.opacity(0.5))
             }
 
             if let message = model.errorMessage {
-                ErrorView(message: message) {
+                NetworkErrorView(message: message) {
                     model.reload()
                 }
             } else if !model.hasLoadedOnce {
-                SplashView()
+                NetworkLoadingView()
             }
         }
         .background(Theme.background.ignoresSafeArea())
@@ -36,7 +36,18 @@ final class WebViewModel: ObservableObject {
     @Published var hasLoadedOnce = false
     @Published var errorMessage: String?
 
+    var pendingURL: URL = AppConfig.signupURL
     weak var webView: WKWebView?
+
+    func open(url: URL) {
+        pendingURL = url
+        errorMessage = nil
+        isLoading = true
+
+        if let webView {
+            webView.load(URLRequest(url: url))
+        }
+    }
 
     func reload() {
         errorMessage = nil
@@ -47,7 +58,7 @@ final class WebViewModel: ObservableObject {
         if webView.url != nil {
             webView.reload()
         } else {
-            webView.load(URLRequest(url: AppConfig.startURL))
+            webView.load(URLRequest(url: pendingURL))
         }
     }
 }
@@ -88,7 +99,7 @@ struct WebView: UIViewRepresentable {
 
         model.webView = webView
         model.isLoading = true
-        webView.load(URLRequest(url: AppConfig.startURL))
+        webView.load(URLRequest(url: model.pendingURL))
 
         return webView
     }
@@ -275,31 +286,29 @@ struct WebView: UIViewRepresentable {
     }
 }
 
-private struct SplashView: View {
+private struct NetworkLoadingView: View {
     var body: some View {
         ZStack {
-            Theme.primary.ignoresSafeArea()
+            Color.white.ignoresSafeArea()
 
-            VStack(spacing: 20) {
+            VStack(spacing: 16) {
                 Image("LogoKyzz")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 120, height: 120)
-                    .padding(18)
-                    .background(Circle().fill(Color.white))
+                    .frame(width: 96, height: 96)
 
-                Text(AppConfig.appName)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.white)
+                Text("Abrindo a Rede Social...")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Theme.textSecondary)
 
                 ProgressView()
-                    .tint(.white)
+                    .tint(Theme.primary)
             }
         }
     }
 }
 
-private struct ErrorView: View {
+private struct NetworkErrorView: View {
     let message: String
     let retry: () -> Void
 
@@ -318,20 +327,13 @@ private struct ErrorView: View {
 
                 Text(message)
                     .font(.system(size: 15))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Theme.textSecondary)
                     .multilineTextAlignment(.center)
 
                 Button(action: retry) {
                     Text("Tentar novamente")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Theme.primary)
-                        )
                 }
+                .buttonStyle(FilledButtonStyle())
                 .padding(.top, 8)
             }
             .padding(32)

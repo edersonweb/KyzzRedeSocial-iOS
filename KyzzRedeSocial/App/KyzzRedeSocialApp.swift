@@ -4,7 +4,7 @@ import SwiftUI
 struct KyzzRedeSocialApp: App {
     var body: some Scene {
         WindowGroup {
-            WebAppView()
+            MainTabView()
                 .preferredColorScheme(.light)
         }
     }
