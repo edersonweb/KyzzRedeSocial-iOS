@@ -1,0 +1,58 @@
+name: KyzzRedeSocial
+options:
+  bundleIdPrefix: br.com.kyzz
+  deploymentTarget:
+    iOS: "16.0"
+  developmentLanguage: pt-BR
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+
+targets:
+  KyzzRedeSocial:
+    type: application
+    platform: iOS
+    sources:
+      - path: KyzzRedeSocial
+        excludes:
+          - "Info.plist"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: br.com.kyzz.app
+        PRODUCT_NAME: KyzzRedeSocial
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 9JQC88U26K
+        GENERATE_INFOPLIST_FILE: NO
+        SUPPORTS_MACCATALYST: NO
+    info:
+      path: KyzzRedeSocial/Info.plist
+      properties:
+        CFBundleDisplayName: "Kyzz Rede Social"
+        CFBundleDevelopmentRegion: pt_BR
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIUserInterfaceStyle: Light
+        ITSAppUsesNonExemptEncryption: false
+        NSCameraUsageDescription: "Permite tirar fotos para enviar ao Kyzz."
+        NSPhotoLibraryUsageDescription: "Permite escolher fotos da sua galeria para enviar ao Kyzz."
+        NSMicrophoneUsageDescription: "Permite gravar áudio para enviar ao Kyzz."
+        LSApplicationQueriesSchemes:
+          - mailto
+          - tel
+          - sms
+          - whatsapp
+    scheme:
+      gatherCoverageData: false
