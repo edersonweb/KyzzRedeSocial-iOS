@@ -75,6 +75,7 @@ struct WebView: UIViewRepresentable {
         configuration.websiteDataStore = .default()
         configuration.allowsInlineMediaPlayback = true
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
+        configuration.applicationNameForUserAgent = "KyzzRedeSocial/1.0"
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
@@ -83,7 +84,6 @@ struct WebView: UIViewRepresentable {
         webView.isOpaque = false
         webView.backgroundColor = UIColor(red: 13.0 / 255.0, green: 59.0 / 255.0, blue: 102.0 / 255.0, alpha: 1)
         webView.scrollView.backgroundColor = .white
-        webView.applicationNameForUserAgent = "KyzzRedeSocial/1.0"
 
         let refreshControl = UIRefreshControl()
         refreshControl.tintColor = UIColor(red: 13.0 / 255.0, green: 59.0 / 255.0, blue: 102.0 / 255.0, alpha: 1)
