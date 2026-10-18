@@ -113,9 +113,13 @@ struct WebView: UIViewRepresentable {
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+        private static let rememberTokenKey = "kyzz_remember_token"
+        private static let feedURL = URL(string: "https://kyzz.com.br/rede_social.php")!
+
         var model: WebViewModel
         weak var webView: WKWebView?
         private var progressObservation: NSKeyValueObservation?
+        private var didAttemptReauth = false
 
         init(model: WebViewModel) {
             self.model = model
@@ -155,6 +159,9 @@ struct WebView: UIViewRepresentable {
                 self.model.errorMessage = nil
                 webView.scrollView.refreshControl?.endRefreshing()
             }
+
+            captureRememberToken()
+            attemptTokenReauthentication(in: webView)
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -196,6 +203,12 @@ struct WebView: UIViewRepresentable {
             }
 
             let scheme = url.scheme?.lowercased() ?? ""
+
+            if let host = url.host?.lowercased(),
+               (host == "kyzz.com.br" || host.hasSuffix(".kyzz.com.br")),
+               url.path.lowercased().contains("logout") {
+                KeychainStore.delete(Self.rememberTokenKey)
+            }
 
             if ["about", "blob", "data"].contains(scheme) {
                 decisionHandler(.allow)
@@ -268,6 +281,62 @@ struct WebView: UIViewRepresentable {
                 completionHandler(alert.textFields?.first?.text)
             })
             topViewController()?.present(alert, animated: true)
+        }
+
+        private func captureRememberToken() {
+            WKWebsiteDataStore.default().httpCookieStore.getAllCookies { cookies in
+                guard let token = cookies.first(where: {
+                    $0.name == Self.rememberTokenKey && $0.domain.lowercased().contains("kyzz.com.br")
+                })?.value, token.count > 20 else {
+                    return
+                }
+
+                KeychainStore.save(token, for: Self.rememberTokenKey)
+            }
+        }
+
+        private func attemptTokenReauthentication(in webView: WKWebView) {
+            guard !didAttemptReauth else { return }
+            guard let host = webView.url?.host?.lowercased(),
+                  host == "kyzz.com.br" || host.hasSuffix(".kyzz.com.br") else {
+                return
+            }
+            guard let token = KeychainStore.read(Self.rememberTokenKey), token.count > 20 else {
+                didAttemptReauth = true
+                return
+            }
+
+            didAttemptReauth = true
+
+            let script = """
+            const response = await fetch('/actions/login_token.php', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'token=\(token)'
+            });
+            return await response.text();
+            """
+
+            webView.callAsyncJavaScript(script, arguments: [:], in: nil, in: .page) { [weak webView] result in
+                guard let webView else { return }
+
+                guard case .success(let value) = result,
+                      let text = value as? String,
+                      let data = text.data(using: .utf8),
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let ok = json["ok"] as? Bool else {
+                    return
+                }
+
+                if ok {
+                    Task { @MainActor in
+                        webView.load(URLRequest(url: Self.feedURL))
+                    }
+                } else {
+                    KeychainStore.delete(Self.rememberTokenKey)
+                }
+            }
         }
 
         private func topViewController() -> UIViewController? {
