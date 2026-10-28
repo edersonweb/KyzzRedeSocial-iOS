@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MoreView: View {
     @Environment(\.openURL) private var openURL
+    let onOpenInApp: (URL) -> Void
 
     private var version: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -12,14 +13,33 @@ struct MoreView: View {
             List {
                 Section("Kyzz") {
                     linkRow("Site oficial", icon: "globe", url: AppConfig.siteURL)
-                    linkRow("Kyzz para escolas", icon: "graduationcap.fill", url: AppConfig.schoolsURL)
+                }
+
+                Section("Conta") {
+                    Button {
+                        onOpenInApp(AppConfig.deleteAccountURL)
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "trash.fill")
+                                .frame(width: 24)
+                                .foregroundColor(.red)
+
+                            Text("Excluir conta")
+                                .foregroundColor(.red)
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 }
 
                 Section("Legal") {
                     linkRow("Termos de uso", icon: "doc.text.fill", url: AppConfig.termsURL)
                     linkRow("Política de privacidade", icon: "hand.raised.fill", url: AppConfig.privacyURL)
                     linkRow("Padrões de segurança", icon: "shield.fill", url: AppConfig.safetyURL)
-                    linkRow("Excluir conta", icon: "trash.fill", url: AppConfig.deleteAccountURL)
                 }
 
                 Section("Contato") {

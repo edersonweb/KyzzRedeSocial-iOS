@@ -114,7 +114,6 @@ struct WebView: UIViewRepresentable {
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         private static let rememberTokenKey = "kyzz_remember_token"
-        private static let feedURL = URL(string: "https://kyzz.com.br/rede_social.php")!
 
         var model: WebViewModel
         weak var webView: WKWebView?
@@ -160,8 +159,25 @@ struct WebView: UIViewRepresentable {
                 webView.scrollView.refreshControl?.endRefreshing()
             }
 
+            hideCommercialLinks(in: webView)
             captureRememberToken()
             attemptTokenReauthentication(in: webView)
+        }
+
+        /// Remove do conteúdo qualquer link para páginas comerciais (planos/escolas).
+        private func hideCommercialLinks(in webView: WKWebView) {
+            let script = """
+            (function() {
+                var style = document.getElementById('kyzz-app-hide-commercial');
+                if (!style) {
+                    style = document.createElement('style');
+                    style.id = 'kyzz-app-hide-commercial';
+                    document.head.appendChild(style);
+                }
+                style.textContent = 'a[href*="kyzz_para_escolas"], a[href*="checkout_plano"], a[href*="obrigado_plano"] { display: none !important; }';
+            })();
+            """
+            webView.evaluateJavaScript(script, completionHandler: nil)
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -223,11 +239,27 @@ struct WebView: UIViewRepresentable {
 
             if let host = url.host?.lowercased(),
                AppConfig.allowedHosts.contains(where: { host == $0 || host.hasSuffix("." + $0) }) {
+                let path = url.path.lowercased()
+                if AppConfig.blockedPaths.contains(where: { path.hasSuffix($0) }) {
+                    decisionHandler(.cancel)
+                    showUnavailableAlert()
+                    return
+                }
                 decisionHandler(.allow)
             } else {
                 UIApplication.shared.open(url)
                 decisionHandler(.cancel)
             }
+        }
+
+        private func showUnavailableAlert() {
+            let alert = UIAlertController(
+                title: "Indisponível no aplicativo",
+                message: "Este conteúdo não está disponível no aplicativo do Kyzz.",
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            topViewController()?.present(alert, animated: true)
         }
 
         func webView(
@@ -331,7 +363,7 @@ struct WebView: UIViewRepresentable {
 
                 if ok {
                     Task { @MainActor in
-                        webView.load(URLRequest(url: Self.feedURL))
+                        webView.load(URLRequest(url: AppConfig.feedURL))
                     }
                 } else {
                     KeychainStore.delete(Self.rememberTokenKey)
