@@ -15,12 +15,13 @@ enum AppConfig {
 
     static let allowedHosts = ["kyzz.com.br"]
 
-    /// Páginas comerciais (planos/escolas) que não podem ser acessadas dentro do aplicativo.
+    /// Páginas comerciais (planos/escolas) e home do site que não podem ser acessadas dentro do aplicativo.
     static let blockedPaths = [
         "kyzz_para_escolas.php",
         "checkout_plano.php",
         "obrigado_plano.php",
-        "cadastro.php"
+        "cadastro.php",
+        "index.php"
     ]
 
     static let shareText = "Conheça o Kyzz, a rede social educativa: https://kyzz.com.br"

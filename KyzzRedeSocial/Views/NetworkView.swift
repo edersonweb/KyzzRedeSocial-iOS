@@ -164,7 +164,7 @@ struct WebView: UIViewRepresentable {
             attemptTokenReauthentication(in: webView)
         }
 
-        /// Remove do conteúdo qualquer link para páginas comerciais (planos/escolas).
+        /// Remove do conteúdo qualquer link para páginas comerciais (planos/escolas) e para a home do site.
         private func hideCommercialLinks(in webView: WKWebView) {
             let script = """
             (function() {
@@ -174,7 +174,7 @@ struct WebView: UIViewRepresentable {
                     style.id = 'kyzz-app-hide-commercial';
                     document.head.appendChild(style);
                 }
-                style.textContent = 'a[href*="kyzz_para_escolas"], a[href*="checkout_plano"], a[href*="obrigado_plano"] { display: none !important; }';
+                style.textContent = 'a[href*="kyzz_para_escolas"], a[href*="checkout_plano"], a[href*="obrigado_plano"], a[href$="index.php"], a[href="/"], a[href="../"], .btn-voltar-inicio { display: none !important; }';
             })();
             """
             webView.evaluateJavaScript(script, completionHandler: nil)
@@ -242,7 +242,12 @@ struct WebView: UIViewRepresentable {
                 let path = url.path.lowercased()
                 if AppConfig.blockedPaths.contains(where: { path.hasSuffix($0) }) {
                     decisionHandler(.cancel)
-                    showUnavailableAlert()
+                    if path.hasSuffix("index.php") {
+                        // Home comercial do site: volta para a página principal do aplicativo.
+                        webView.load(URLRequest(url: AppConfig.signupURL))
+                    } else {
+                        showUnavailableAlert()
+                    }
                     return
                 }
                 decisionHandler(.allow)
