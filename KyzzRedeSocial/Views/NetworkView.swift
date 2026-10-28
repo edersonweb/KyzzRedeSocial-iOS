@@ -160,8 +160,34 @@ struct WebView: UIViewRepresentable {
             }
 
             hideCommercialLinks(in: webView)
+            injectBackButtonIfNeeded(in: webView)
             captureRememberToken()
             attemptTokenReauthentication(in: webView)
+        }
+
+        /// Mostra um botão flutuante "Voltar" nas páginas internas (ex.: exclusão de conta).
+        private func injectBackButtonIfNeeded(in webView: WKWebView) {
+            let path = webView.url?.path.lowercased() ?? ""
+            guard !path.hasSuffix("rede_social.php"), !path.hasSuffix("cadastro_rede_social.php") else { return }
+
+            let script = """
+            (function() {
+                if (document.getElementById('kyzz-app-back')) { return; }
+                var b = document.createElement('button');
+                b.id = 'kyzz-app-back';
+                b.textContent = '‹ Voltar';
+                b.style.cssText = 'position:fixed;top:10px;left:10px;z-index:2147483647;background:rgba(13,59,102,0.92);color:#fff;border:0;border-radius:18px;padding:7px 16px;font:600 14px -apple-system,system-ui,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.3)';
+                b.addEventListener('click', function() {
+                    if (window.history.length > 1) {
+                        window.history.back();
+                    } else {
+                        window.location.href = 'https://kyzz.com.br/cadastro_rede_social.php';
+                    }
+                });
+                document.body.appendChild(b);
+            })();
+            """
+            webView.evaluateJavaScript(script, completionHandler: nil)
         }
 
         /// Remove do conteúdo qualquer link para páginas comerciais (planos/escolas) e para a home do site.
